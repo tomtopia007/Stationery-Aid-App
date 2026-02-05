@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Hub</title>
+    <meta name="description" content="Track and manage volunteer hours for your charity organization">
+    <link rel="stylesheet" href="styles.css?v=101">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-logo">
+                <img src="assets/stationery-aid-icon.png" alt="Stationery Aid" class="login-icon">
+                <h1>Sign In</h1>
+                <p class="login-subtitle">Stationery Aid</p>
+            </div>
+
+            <div class="login-options">
+                <button id="volunteerLoginBtn" class="login-option-btn volunteer-login">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span>Volunteer Login</span>
+                </button>
+                <button id="managerLoginBtn" class="login-option-btn manager-login">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="m2 17 10 5 10-5M2 12l10 5 10-5"></path>
+                    </svg>
+                    <span>Manager Login</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Volunteer Login Form Modal -->
+    <div id="volunteerLoginModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Volunteer Login</h3>
+                <button class="modal-close" data-modal="volunteerLoginModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="volunteerLoginForm" class="modal-form">
+                <p class="login-info">Enter your details to access your volunteer profile.</p>
+                <div class="form-group">
+                    <label for="loginName">Full Name</label>
+                    <input type="text" id="loginName" placeholder="e.g., John Smith" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="e.g., john@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPhone">Phone Number</label>
+                    <input type="tel" id="loginPhone" placeholder="e.g., 0400 000 000" required>
+                </div>
+                <p id="loginError" class="login-error"></p>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" data-modal="volunteerLoginModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manager Login Modal (Google Sign-In) -->
+    <div id="managerLoginModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Manager Login</h3>
+                <button class="modal-close" data-modal="managerLoginModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="google-signin-container">
+                <p class="login-info">Sign in with your authorized Google account to access the manager dashboard.</p>
+                <div id="googleSignInButton"></div>
+                <p id="managerLoginError" class="login-error"></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="background-gradient"></div>
+
+    <!-- Header -->
+    <header class="main-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <img src="assets/stationery-aid-icon.png" alt="Stationery Aid">
+                </div>
+                <h1 id="headerTitle">Volunteer Hub</h1>
+            </div>
+            <div class="header-actions">
+                <button id="createShiftBtn" class="btn btn-secondary manager-only">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                        <line x1="12" y1="14" x2="12" y2="18"></line>
+                        <line x1="10" y1="16" x2="14" y2="16"></line>
+                    </svg>
+                    Create Shift
+                </button>
+                <button id="upcomingShiftsBtn" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    Upcoming Shifts
+                </button>
+                <button id="reviewShiftsBtn" class="btn btn-review manager-only">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 11l3 3L22 4"></path>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                    Review Shifts
+                    <span id="reviewBadge" class="notification-badge" style="display: none;">0</span>
+                </button>
+                <button id="volunteerAgreementBtn" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Volunteer Agreement
+                </button>
+                <button id="exportBtn" class="btn btn-export manager-only">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export to Excel
+                </button>
+
+                <button id="logoutBtn" class="btn btn-logout">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                </button>
+            </div>
+            <div class="sync-indicator">
+                <span id="lastUpdated">Last updated: --</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Stats Section -->
+        <section class="stats-section manager-only">
+            <div class="stat-card">
+                <div class="stat-icon volunteers-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalVolunteers">0</span>
+                    <span class="stat-label">Total Volunteers</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon hours-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalHours">0</span>
+                    <span class="stat-label">Total Hours</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon sessions-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalSessions">0</span>
+                    <span class="stat-label">Work Sessions</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Volunteers Section (Manager Only) -->
+        <section class="volunteers-section manager-only">
+            <div class="section-header">
+                <h2>Volunteers</h2>
+                <div class="header-buttons manager-only">
+                    <button id="restoreBackupBtn" class="btn btn-secondary" title="Restore from exported backup">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="1 4 1 10 7 10"></polyline>
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                        </svg>
+                        Restore Backup
+                    </button>
+                    <button id="importExcelBtn" class="btn btn-secondary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Import Excel
+                    </button>
+                    <button id="addVolunteerBtn" class="btn btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Volunteer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search and Count Bar -->
+            <div class="search-bar">
+                <div class="search-input-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Search volunteers by name...">
+                </div>
+                <span id="volunteerCount" class="volunteer-count">0 volunteers</span>
+            </div>
+
+            <!-- Hidden file inputs -->
+            <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display: none;">
+            <input type="file" id="backupFileInput" accept=".xlsx,.xls" style="display: none;">
+
+            <div id="volunteersGrid" class="volunteers-grid">
+                <!-- Volunteer cards will be inserted here -->
+            </div>
+
+            <div id="emptyState" class="empty-state">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <line x1="19" y1="8" x2="19" y2="14"></line>
+                        <line x1="22" y1="11" x2="16" y2="11"></line>
+                    </svg>
+                </div>
+                <h3>No volunteers yet</h3>
+                <p>Click "Add Volunteer" to get started tracking hours</p>
+            </div>
+        </section>
+
+        <!-- Volunteer Dashboard (Only visible to logged-in volunteers) -->
+        <section id="volunteerDashboard" class="volunteer-dashboard volunteer-only">
+            <div class="dashboard-welcome">
+                <h2>Welcome, <span id="volunteerWelcomeName">Volunteer</span>!</h2>
+                <p>Here's your personal dashboard</p>
+            </div>
+
+            <!-- My Profile Section -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>My Profile</h3>
+                    <button id="editMyProfileBtn" class="btn btn-secondary btn-small">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        Edit Profile
+                    </button>
+                </div>
+                <div id="myProfileCard" class="profile-card">
+                    <!-- Profile details will be rendered here -->
+                </div>
+            </div>
+
+            <!-- My Hours Section -->
+            <div class="dashboard-section">
+                <h3>My Hours</h3>
+                <div class="my-hours-summary">
+                    <div class="hours-stat">
+                        <span class="hours-value" id="myTotalHours">0</span>
+                        <span class="hours-label">Total Hours</span>
+                    </div>
+                    <div class="hours-stat">
+                        <span class="hours-value" id="myTotalSessions">0</span>
+                        <span class="hours-label">Sessions</span>
+                    </div>
+                </div>
+                <div id="myHoursHistory" class="hours-history">
+                    <!-- Hours entries will be rendered here -->
+                </div>
+            </div>
+
+            <!-- My Applied Shifts Section -->
+            <div class="dashboard-section">
+                <h3>My Applied Shifts</h3>
+                <div id="myAppliedShifts" class="applied-shifts-list">
+                    <!-- Applied shifts will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Upcoming Shifts Section (Volunteer can apply) -->
+            <div class="dashboard-section">
+                <h3>Available Shifts</h3>
+                <div id="volunteerShiftsList" class="shifts-list">
+                    <!-- Available shifts will be rendered here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Add Volunteer Modal -->
+    <div id="volunteerModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Volunteer</h3>
+                <button class="modal-close" data-modal="volunteerModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="volunteerForm" class="modal-form">
+                <div class="form-group">
+                    <label for="volunteerName">Full Name</label>
+                    <input type="text" id="volunteerName" name="name" required placeholder="Enter volunteer's name">
+                </div>
+                <div class="form-group">
+                    <label for="volunteerPhone">Phone Number</label>
+                    <input type="tel" id="volunteerPhone" name="phone" placeholder="e.g. 0412 345 678">
+                </div>
+                <div class="form-group">
+                    <label for="volunteerEmail">Email Address</label>
+                    <input type="email" id="volunteerEmail" name="email" placeholder="e.g. john@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="volunteerAddress">Address</label>
+                    <input type="text" id="volunteerAddress" name="address" placeholder="e.g. 123 Main Street">
+                </div>
+                <div class="form-group">
+                    <label for="volunteerSuburb">Suburb</label>
+                    <input type="text" id="volunteerSuburb" name="suburb" placeholder="e.g. Fortitude Valley">
+                </div>
+                <div class="form-group">
+                    <label for="volunteerEmergencyContact">Emergency Contact</label>
+                    <input type="text" id="volunteerEmergencyContact" name="emergencyContact"
+                        placeholder="e.g. Jane Doe - 0412 345 678">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" data-modal="volunteerModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Volunteer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Hours Modal -->
+    <div id="hoursModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Work Hours</h3>
+                <button class="modal-close" data-modal="hoursModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="hoursForm" class="modal-form">
+                <input type="hidden" id="hoursVolunteerId" name="volunteerId">
+                <p class="hours-for-name" id="hoursForName"></p>
+                <div class="form-group">
+                    <label for="workDate">Work Date</label>
+                    <input type="date" id="workDate" name="date" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="checkInTime">Check In Time</label>
+                        <input type="time" id="checkInTime" name="checkIn" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="checkOutTime">Check Out Time</label>
+                        <input type="time" id="checkOutTime" name="checkOut" required>
+                    </div>
+                </div>
+
+                <!-- Optional Break Time Section -->
+                <div class="break-section">
+                    <label class="break-toggle">
+                        <input type="checkbox" id="hadBreak" name="hadBreak">
+                        <span class="toggle-label">Did they take a break?</span>
+                    </label>
+                    <div id="breakTimeFields" class="break-time-fields" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="breakStart">Break Start</label>
+                                <input type="time" id="breakStart" name="breakStart">
+                            </div>
+                            <div class="form-group">
+                                <label for="breakEnd">Break End</label>
+                                <input type="time" id="breakEnd" name="breakEnd">
+                            </div>
+                        </div>
+                        <p class="break-duration-display" id="breakDurationDisplay"></p>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" data-modal="hoursModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Hours</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Volunteer Details Modal -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="detailsName">Volunteer Details</h3>
+                <button class="modal-close" data-modal="detailsModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="details-content">
+                <div class="details-info">
+                    <p><strong>Phone:</strong> <span id="detailsPhone"></span></p>
+                    <p><strong>Email:</strong> <span id="detailsEmail"></span></p>
+                    <p><strong>Address:</strong> <span id="detailsAddress"></span></p>
+                    <p><strong>Suburb:</strong> <span id="detailsSuburb"></span></p>
+                    <p><strong>Emergency Contact:</strong> <span id="detailsEmergencyContact"></span></p>
+                    <p><strong>Total Hours:</strong> <span id="detailsTotalHours"></span></p>
+                </div>
+                <div class="details-hours">
+                    <h4>Work Sessions</h4>
+                    <div id="hoursTableContainer">
+                        <table class="hours-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Check In</th>
+                                    <th>Check Out</th>
+                                    <th>Hours</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hoursTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="noHoursMessage" class="no-hours-message">No work sessions recorded yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Shift Modal -->
+    <div id="createShiftModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ Create New Shift</h3>
+                <button class="modal-close" data-modal="createShiftModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="createShiftForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="shiftDate">Date</label>
+                        <input type="date" id="shiftDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="shiftVolunteersNeeded">Volunteers Needed</label>
+                        <input type="number" id="shiftVolunteersNeeded" min="1" max="50" value="5" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="shiftStartTime">Start Time</label>
+                        <input type="time" id="shiftStartTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="shiftEndTime">End Time</label>
+                        <input type="time" id="shiftEndTime" required>
+                    </div>
+                </div>
+                <div class="break-section">
+                    <label class="break-toggle">
+                        <input type="checkbox" id="shiftHasBreak">
+                        <span class="toggle-label">Include break time?</span>
+                    </label>
+                    <div id="shiftBreakFields" class="break-time-fields" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="shiftBreakStart">Break Start</label>
+                                <input type="time" id="shiftBreakStart">
+                            </div>
+                            <div class="form-group">
+                                <label for="shiftBreakEnd">Break End</label>
+                                <input type="time" id="shiftBreakEnd">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="shiftDescription">Description (optional)</label>
+                    <input type="text" id="shiftDescription" placeholder="e.g., Morning packing session">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" data-modal="createShiftModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Shift</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upcoming Shifts Modal -->
+    <div id="upcomingShiftsModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>📋 Upcoming Shifts</h3>
+                <button class="modal-close" data-modal="upcomingShiftsModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div id="shiftsList" class="shifts-list">
+                <p class="no-shifts-message" id="noShiftsMessage">No upcoming shifts scheduled.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply for Shift Modal -->
+    <div id="applyShiftModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Apply for Shift</h3>
+                <button class="modal-close" data-modal="applyShiftModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="applyShiftForm" class="modal-form">
+                <input type="hidden" id="applyShiftId">
+                <p id="applyShiftDetails" class="shift-details-text"></p>
+                <div class="form-group">
+                    <label for="volunteerSearch">Search Volunteer</label>
+                    <input type="text" id="volunteerSearch" placeholder="Start typing a name...">
+                    <div id="volunteerSearchResults" class="search-results"></div>
+                    <input type="hidden" id="selectedVolunteerId">
+                    <p id="selectedVolunteerName" class="selected-volunteer"></p>
+                </div>
+                <div class="form-group">
+                    <label for="applicantNotes">Notes (optional)</label>
+                    <textarea id="applicantNotes" rows="3"
+                        placeholder="Any notes for the manager (e.g., need to leave early)"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" data-modal="applyShiftModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Confirm Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Applicants Modal -->
+    <div id="viewApplicantsModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Shift Applicants</h3>
+                <button class="modal-close" data-modal="viewApplicantsModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <p id="viewApplicantsShiftInfo" class="shift-details-text"></p>
+            <div id="applicantsList" class="applicants-list"></div>
+        </div>
+    </div>
+
+    <!-- Volunteer Agreement Modal -->
+    <div id="volunteerAgreementModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Volunteer Agreement</h3>
+                <div class="modal-header-actions">
+                    <button id="printAgreementBtn" class="btn btn-secondary btn-small">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        Print
+                    </button>
+                    <button class="modal-close" data-modal="volunteerAgreementModal">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="pdf-container">
+                <iframe id="agreementPdfFrame"
+                    src="Template - General Volunteer Agreement - V4 - June 2025.pdf#toolbar=0&navpanes=0&scrollbar=1"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Shifts Modal -->
+    <div id="reviewShiftsModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Review Completed Shifts</h3>
+                <button class="modal-close" data-modal="reviewShiftsModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div id="reviewShiftsContent" class="review-shifts-content">
+                <p class="loading-text">Loading pending reviews...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="sheets-api.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

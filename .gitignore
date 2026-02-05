@@ -1,0 +1,20 @@
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node modules (if any)
+node_modules/
+
+# Local development
+*.log
+*.local
+
+# Sensitive files (don't commit API keys)
+# Note: The sheets-api.js contains the Google Apps Script URL which is intentionally public
