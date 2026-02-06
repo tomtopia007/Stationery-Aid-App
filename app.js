@@ -1894,7 +1894,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Apply for Shift Form Submit
-    document.getElementById('applyShiftForm').addEventListener('submit', (e) => {
+    document.getElementById('applyShiftForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const shiftId = document.getElementById('applyShiftId').value;
@@ -1906,7 +1906,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (applyForShift(shiftId, volunteerId, notes)) {
+        if (await applyForShift(shiftId, volunteerId, notes)) {
             closeModal('applyShiftModal');
             renderShifts();
             alert('Application submitted successfully!');
@@ -2161,27 +2161,27 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = `
             <div class="profile-item">
                 <span class="profile-label">Name:</span>
-                <span class="profile-value">${volunteer.name}</span>
+                <span class="profile-value">${escapeHtml(volunteer.name)}</span>
             </div>
             <div class="profile-item">
                 <span class="profile-label">Email:</span>
-                <span class="profile-value">${volunteer.email || 'Not provided'}</span>
+                <span class="profile-value">${escapeHtml(volunteer.email || 'Not provided')}</span>
             </div>
             <div class="profile-item">
                 <span class="profile-label">Phone:</span>
-                <span class="profile-value">${volunteer.phone || 'Not provided'}</span>
+                <span class="profile-value">${escapeHtml(volunteer.phone || 'Not provided')}</span>
             </div>
             <div class="profile-item">
                 <span class="profile-label">Address:</span>
-                <span class="profile-value">${volunteer.address || 'Not provided'}</span>
+                <span class="profile-value">${escapeHtml(volunteer.address || 'Not provided')}</span>
             </div>
             <div class="profile-item">
                 <span class="profile-label">Suburb:</span>
-                <span class="profile-value">${volunteer.suburb || 'Not provided'}</span>
+                <span class="profile-value">${escapeHtml(volunteer.suburb || 'Not provided')}</span>
             </div>
             <div class="profile-item">
                 <span class="profile-label">Emergency Contact:</span>
-                <span class="profile-value">${volunteer.emergencyContact || 'Not provided'}</span>
+                <span class="profile-value">${escapeHtml(volunteer.emergencyContact || 'Not provided')}</span>
             </div>
         `;
     }
@@ -2213,68 +2213,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="hours-entry-time">${entry.checkIn} - ${entry.checkOut}</span>
                     </div>
                     <span class="hours-entry-duration">${hoursWorked} hrs</span>
-                </div>
-            `;
-        }).join('');
-    }
-
-    function renderAppliedShifts(volunteerId) {
-        const container = document.getElementById('myAppliedShifts');
-        const shifts = appData.shifts || [];
-
-        const appliedShifts = shifts.filter(shift =>
-            shift.applicants && shift.applicants.some(a => a.volunteerId === volunteerId)
-        );
-
-        if (appliedShifts.length === 0) {
-            container.innerHTML = '<p class="no-data-message">You haven\'t applied for any shifts yet.</p>';
-            return;
-        }
-
-        container.innerHTML = appliedShifts.map(shift => {
-            const myApplication = shift.applicants.find(a => a.volunteerId === volunteerId);
-            return `
-                <div class="volunteer-shift-card">
-                    <div class="shift-date">${formatDate(shift.date)}</div>
-                    <div class="shift-time">${shift.startTime} - ${shift.endTime}</div>
-                    ${shift.description ? `<div class="shift-description">${shift.description}</div>` : ''}
-                    ${myApplication.notes ? `<div class="shift-applicants">Your note: ${myApplication.notes}</div>` : ''}
-                </div>
-            `;
-        }).join('');
-    }
-
-    function renderAvailableShifts(volunteerId) {
-        const container = document.getElementById('volunteerShiftsList');
-        const shifts = appData.shifts || [];
-
-        // Filter to future shifts only
-        const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local timezone
-        const futureShifts = shifts.filter(shift => shift.date >= today);
-
-        if (futureShifts.length === 0) {
-            container.innerHTML = '<p class="no-data-message">No upcoming shifts available.</p>';
-            return;
-        }
-
-        container.innerHTML = futureShifts.map(shift => {
-            const alreadyApplied = shift.applicants && shift.applicants.some(a => a.volunteerId === volunteerId);
-            const applicantCount = shift.applicants ? shift.applicants.length : 0;
-            const applicantNames = shift.applicants ? shift.applicants.map(a => a.volunteerName).join(', ') : '';
-
-            return `
-                <div class="volunteer-shift-card">
-                    <div class="shift-date">${formatDate(shift.date)}</div>
-                    <div class="shift-time">${shift.startTime} - ${shift.endTime}</div>
-                    ${shift.description ? `<div class="shift-description">${shift.description}</div>` : ''}
-                    <div class="shift-applicants">
-                        ${applicantCount}/${shift.volunteersNeeded} volunteers signed up
-                        ${applicantNames ? `<br><small>Signed up: ${applicantNames}</small>` : ''}
-                    </div>
-                    ${alreadyApplied
-                    ? '<button class="btn btn-secondary btn-small" disabled>Already Applied</button>'
-                    : `<button class="btn btn-primary btn-small apply-btn" onclick="volunteerApplyForShift('${shift.id}')">Apply for Shift</button>`
-                }
                 </div>
             `;
         }).join('');
@@ -2340,10 +2278,10 @@ function renderAppliedShifts(volunteerId) {
         const myApplication = shift.applicants.find(a => a.volunteerId === volunteerId);
         return `
             <div class="volunteer-shift-card">
-                <div class="shift-date">${shift.date}</div>
+                <div class="shift-date">${formatDate(shift.date)}</div>
                 <div class="shift-time">${shift.startTime} - ${shift.endTime}</div>
-                ${shift.description ? `<div class="shift-description">${shift.description}</div>` : ''}
-                ${myApplication.notes ? `<div class="shift-applicants">Your note: ${myApplication.notes}</div>` : ''}
+                ${shift.description ? `<div class="shift-description">${escapeHtml(shift.description)}</div>` : ''}
+                ${myApplication.notes ? `<div class="shift-applicants">Your note: ${escapeHtml(myApplication.notes)}</div>` : ''}
             </div>
         `;
     }).join('');
@@ -2371,12 +2309,12 @@ function renderAvailableShifts(volunteerId) {
 
         return `
             <div class="volunteer-shift-card">
-                <div class="shift-date">${shift.date}</div>
+                <div class="shift-date">${formatDate(shift.date)}</div>
                 <div class="shift-time">${shift.startTime} - ${shift.endTime}</div>
-                ${shift.description ? `<div class="shift-description">${shift.description}</div>` : ''}
+                ${shift.description ? `<div class="shift-description">${escapeHtml(shift.description)}</div>` : ''}
                 <div class="shift-applicants">
                     ${applicantCount}/${shift.volunteersNeeded} volunteers signed up
-                    ${applicantNames ? `<br><small>Signed up: ${applicantNames}</small>` : ''}
+                    ${applicantNames ? `<br><small>Signed up: ${escapeHtml(applicantNames)}</small>` : ''}
                 </div>
                 ${alreadyApplied
                 ? '<button class="btn btn-secondary btn-small" disabled>Already Applied</button>'
@@ -2444,7 +2382,7 @@ function openReviewShiftsModal() {
 function renderReviewShiftCard(shift) {
     const attendeesHtml = shift.applicants.map((app, index) => `
         <div class="review-attendee-row" data-volunteer-id="${app.volunteerId}" data-shift-id="${shift.id}">
-            <span class="attendee-name">${app.volunteerName}</span>
+            <span class="attendee-name">${escapeHtml(app.volunteerName)}</span>
             <input type="time" class="check-in" value="${shift.startTime}" title="Check In">
             <input type="time" class="check-out" value="${shift.endTime}" title="Check Out">
             <input type="time" class="break-start" value="${shift.breakStart || ''}" title="Break Start">
@@ -2461,8 +2399,8 @@ function renderReviewShiftCard(shift) {
     return `
         <div class="review-shift-card" data-shift-id="${shift.id}">
             <div class="review-shift-header">
-                <h4>${shift.date}</h4>
-                <span class="shift-time">${shift.startTime} - ${shift.endTime}${shift.description ? ' • ' + shift.description : ''}</span>
+                <h4>${escapeHtml(shift.date)}</h4>
+                <span class="shift-time">${shift.startTime} - ${shift.endTime}${shift.description ? ' • ' + escapeHtml(shift.description) : ''}</span>
             </div>
             <div class="review-attendees-header" style="display: grid; grid-template-columns: 1fr repeat(4, 100px) 40px; gap: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: var(--text-secondary);">
                 <span>Name</span>
@@ -2478,7 +2416,7 @@ function renderReviewShiftCard(shift) {
             <div class="add-volunteer-row">
                 <select id="add-volunteer-${shift.id}" class="form-control" style="max-width: 200px; display: inline-block;">
                     <option value="">Add a volunteer...</option>
-                    ${appData.volunteers.map(v => `<option value="${v.id}">${v.name}</option>`).join('')}
+                    ${appData.volunteers.map(v => `<option value="${v.id}">${escapeHtml(v.name)}</option>`).join('')}
                 </select>
                 <button class="btn btn-secondary btn-small" onclick="addReviewAttendee('${shift.id}')">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -2529,7 +2467,7 @@ function addReviewAttendee(shiftId) {
     newRow.dataset.volunteerId = volunteerId;
     newRow.dataset.shiftId = shiftId;
     newRow.innerHTML = `
-        <span class="attendee-name">${volunteer.name}</span>
+        <span class="attendee-name">${escapeHtml(volunteer.name)}</span>
         <input type="time" class="check-in" value="${shift.startTime}" title="Check In">
         <input type="time" class="check-out" value="${shift.endTime}" title="Check Out">
         <input type="time" class="break-start" value="${shift.breakStart || ''}" title="Break Start">

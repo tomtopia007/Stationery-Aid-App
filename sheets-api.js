@@ -2,7 +2,7 @@
 // Volunteer Hours Tracker - Sheets API Client
 // ========================================
 
-const SHEETS_API_URL = 'https://script.google.com/a/macros/stationeryaid.org/s/AKfycbx-ff1y4kzrCmHGx-FgaFOof8IsUrnd5q5xt9z8cckD5yRIpLlaRmb-F1AKff0llBPBww/exec';
+const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbz9jkWr_jIvxlinW8U0ZYYksZJm6wCvYGCRPNSMSsvtc58_mo8_lG9S1K_QAkKr2sjaaQ/exec';
 const API_KEY = 'SA_2026_xK9mP2vL8nQ3wR7y';
 
 // ========================================
@@ -10,20 +10,37 @@ const API_KEY = 'SA_2026_xK9mP2vL8nQ3wR7y';
 // ========================================
 
 async function callSheetsAPI(action, params = {}) {
-    const url = new URL(SHEETS_API_URL);
-    url.searchParams.append('action', action);
-    url.searchParams.append('apiKey', API_KEY);
+    // For write operations, include manager email for server-side auth
+    const writeActions = [
+        'saveVolunteer', 'deleteVolunteer',
+        'saveHours', 'deleteHours',
+        'saveShift', 'deleteShift',
+        'removeApplicant',
+        'submitShiftReview',
+        'addManager', 'removeManager'
+    ];
+    if (writeActions.includes(action)) {
+        const session = getSession();
+        if (session && session.userType === 'manager' && session.userData && session.userData.email) {
+            params.managerEmail = session.userData.email;
+        }
+    }
+
+    // Build POST body with action, API key, and all params
+    const body = { action: action, apiKey: API_KEY };
 
     for (const [key, value] of Object.entries(params)) {
         if (value !== undefined && value !== null) {
-            url.searchParams.append(key, typeof value === 'object' ? JSON.stringify(value) : value);
+            body[key] = typeof value === 'object' ? JSON.stringify(value) : value;
         }
     }
 
     try {
-        const response = await fetch(url.toString(), {
-            method: 'GET',
-            mode: 'cors'
+        const response = await fetch(SHEETS_API_URL, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(body)
         });
 
         const result = await response.json();
@@ -167,6 +184,7 @@ async function managerLoginAPI(email) {
 // ========================================
 
 const SESSION_KEY = 'volunteerTrackerSession';
+const SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function saveSession(userType, userData) {
     const session = {
@@ -181,7 +199,17 @@ function getSession() {
     const sessionStr = localStorage.getItem(SESSION_KEY);
     if (sessionStr) {
         try {
-            return JSON.parse(sessionStr);
+            const session = JSON.parse(sessionStr);
+            // Check session expiry
+            if (session.loginTime) {
+                const elapsed = Date.now() - new Date(session.loginTime).getTime();
+                if (elapsed > SESSION_EXPIRY_MS) {
+                    console.log('Session expired after', Math.round(elapsed / 3600000), 'hours');
+                    clearSession();
+                    return null;
+                }
+            }
+            return session;
         } catch {
             return null;
         }
@@ -220,9 +248,10 @@ function showLoading(message = 'Loading...') {
         loader.innerHTML = `
             <div class="loader-content">
                 <div class="loader-spinner"></div>
-                <p class="loader-message">${message}</p>
+                <p class="loader-message"></p>
             </div>
         `;
+        loader.querySelector('.loader-message').textContent = message;
         document.body.appendChild(loader);
     } else {
         loader.querySelector('.loader-message').textContent = message;

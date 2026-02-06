@@ -10,6 +10,49 @@
 const INITIAL_ADMIN_EMAIL = 'tomtopia007@gmail.com';
 const API_KEY = 'SA_2026_xK9mP2vL8nQ3wR7y';
 
+// Actions that modify data and require manager authentication
+// Note: 'applyForShift' is excluded so volunteers can still apply
+const MANAGER_WRITE_ACTIONS = [
+    'saveVolunteer', 'deleteVolunteer',
+    'saveHours', 'deleteHours',
+    'saveShift', 'deleteShift',
+    'removeApplicant',
+    'submitShiftReview',
+    'addManager', 'removeManager'
+];
+
+// ========================================
+// Rate Limiting
+// ========================================
+
+function checkRateLimit(action, identifier) {
+    var cache = CacheService.getScriptCache();
+    var key = 'rate_' + action + '_' + (identifier || 'global');
+    var current = cache.get(key);
+
+    var limit = getRateLimit(action);
+
+    if (current) {
+        var count = parseInt(current);
+        if (count >= limit) {
+            return false; // Rate limited
+        }
+        cache.put(key, String(count + 1), 60); // 60 second window
+    } else {
+        cache.put(key, '1', 60);
+    }
+    return true;
+}
+
+function getRateLimit(action) {
+    // Read operations: more lenient
+    if (action === 'getData') return 30;
+    if (action === 'volunteerLogin' || action === 'managerLogin') return 10;
+    if (action === 'getPendingReviews') return 20;
+    // Write operations: stricter
+    return 20;
+}
+
 // ========================================
 // Web App Entry Points
 // ========================================
@@ -23,11 +66,26 @@ function doPost(e) {
 }
 
 function handleRequest(e) {
-    const action = e.parameter.action;
-    const providedKey = e.parameter.apiKey;
+    // Merge URL params with POST body (POST body takes precedence)
+    var params = e.parameter || {};
+    if (e.postData && e.postData.contents) {
+        try {
+            var bodyParams = JSON.parse(e.postData.contents);
+            for (var key in bodyParams) {
+                if (bodyParams.hasOwnProperty(key)) {
+                    params[key] = bodyParams[key];
+                }
+            }
+        } catch (err) {
+            // If body isn't valid JSON, continue with URL params only
+        }
+    }
+
+    var action = params.action;
+    var providedKey = params.apiKey;
 
     // Login actions remain public (users need to log in first)
-    const publicActions = ['volunteerLogin', 'managerLogin'];
+    var publicActions = ['volunteerLogin', 'managerLogin'];
 
     // Check API key for non-public actions
     if (!publicActions.includes(action) && providedKey !== API_KEY) {
@@ -36,7 +94,31 @@ function handleRequest(e) {
             .setMimeType(ContentService.MimeType.JSON);
     }
 
-    let result;
+    // For write operations, verify the caller is an authorized manager
+    if (MANAGER_WRITE_ACTIONS.includes(action)) {
+        var managerEmail = params.managerEmail;
+        if (!managerEmail) {
+            return ContentService
+                .createTextOutput(JSON.stringify({ success: false, error: 'Manager authentication required for this action' }))
+                .setMimeType(ContentService.MimeType.JSON);
+        }
+        var managerCheck = managerLogin(managerEmail);
+        if (!managerCheck.success) {
+            return ContentService
+                .createTextOutput(JSON.stringify({ success: false, error: 'Not authorized: ' + managerEmail + ' is not a manager' }))
+                .setMimeType(ContentService.MimeType.JSON);
+        }
+    }
+
+    // Rate limiting
+    var rateLimitId = params.managerEmail || params.email || 'anonymous';
+    if (!checkRateLimit(action, rateLimitId)) {
+        return ContentService
+            .createTextOutput(JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again in a minute.' }))
+            .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var result;
 
     try {
         switch (action) {
@@ -44,46 +126,46 @@ function handleRequest(e) {
                 result = getAllData();
                 break;
             case 'volunteerLogin':
-                result = volunteerLogin(e.parameter.name, e.parameter.email, e.parameter.phone);
+                result = volunteerLogin(params.name, params.email, params.phone);
                 break;
             case 'managerLogin':
-                result = managerLogin(e.parameter.email);
+                result = managerLogin(params.email);
                 break;
             case 'saveVolunteer':
-                result = saveVolunteer(JSON.parse(e.parameter.data));
+                result = saveVolunteer(typeof params.data === 'string' ? JSON.parse(params.data) : params.data);
                 break;
             case 'deleteVolunteer':
-                result = deleteVolunteer(e.parameter.id);
+                result = deleteVolunteer(params.id);
                 break;
             case 'saveHours':
-                result = saveHours(JSON.parse(e.parameter.data));
+                result = saveHours(typeof params.data === 'string' ? JSON.parse(params.data) : params.data);
                 break;
             case 'deleteHours':
-                result = deleteHours(e.parameter.volunteerId, e.parameter.entryId);
+                result = deleteHours(params.volunteerId, params.entryId);
                 break;
             case 'saveShift':
-                result = saveShift(JSON.parse(e.parameter.data));
+                result = saveShift(typeof params.data === 'string' ? JSON.parse(params.data) : params.data);
                 break;
             case 'deleteShift':
-                result = deleteShift(e.parameter.id);
+                result = deleteShift(params.id);
                 break;
             case 'applyForShift':
-                result = applyForShift(e.parameter.shiftId, e.parameter.volunteerId, e.parameter.notes);
+                result = applyForShift(params.shiftId, params.volunteerId, params.notes);
                 break;
             case 'removeApplicant':
-                result = removeApplicant(e.parameter.shiftId, e.parameter.volunteerId);
+                result = removeApplicant(params.shiftId, params.volunteerId);
                 break;
             case 'getPendingReviews':
                 result = getPendingReviews();
                 break;
             case 'submitShiftReview':
-                result = submitShiftReview(JSON.parse(e.parameter.data));
+                result = submitShiftReview(typeof params.data === 'string' ? JSON.parse(params.data) : params.data);
                 break;
             case 'addManager':
-                result = addManager(e.parameter.email, e.parameter.adminEmail);
+                result = addManager(params.email, params.adminEmail);
                 break;
             case 'removeManager':
-                result = removeManager(e.parameter.email, e.parameter.adminEmail);
+                result = removeManager(params.email, params.adminEmail);
                 break;
             case 'initializeSheets':
                 result = initializeSheets();
@@ -296,8 +378,8 @@ function volunteerLogin(name, email, phone) {
 
     const data = getSheetData(sheet);
 
-    // Helper to normalize phone (remove apostrophe prefix if present)
-    const normalizePhone = (p) => p ? p.toString().replace(/^'/, '').trim() : '';
+    // Helper to normalize phone (strip apostrophe prefix, then all non-digits for consistent comparison)
+    const normalizePhone = (p) => p ? p.toString().replace(/^'/, '').replace(/\D/g, '') : '';
     const inputPhone = normalizePhone(phone);
 
     // Find matching volunteer
