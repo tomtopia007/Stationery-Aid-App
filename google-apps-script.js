@@ -8,6 +8,7 @@
 // Configuration
 // ========================================
 const INITIAL_ADMIN_EMAIL = 'tomtopia007@gmail.com';
+const API_KEY = 'SA_2026_xK9mP2vL8nQ3wR7y';
 
 // ========================================
 // Web App Entry Points
@@ -23,6 +24,18 @@ function doPost(e) {
 
 function handleRequest(e) {
     const action = e.parameter.action;
+    const providedKey = e.parameter.apiKey;
+
+    // Login actions remain public (users need to log in first)
+    const publicActions = ['volunteerLogin', 'managerLogin'];
+
+    // Check API key for non-public actions
+    if (!publicActions.includes(action) && providedKey !== API_KEY) {
+        return ContentService
+            .createTextOutput(JSON.stringify({ success: false, error: 'Unauthorized' }))
+            .setMimeType(ContentService.MimeType.JSON);
+    }
+
     let result;
 
     try {

@@ -3,6 +3,7 @@
 // ========================================
 
 const SHEETS_API_URL = 'https://script.google.com/a/macros/stationeryaid.org/s/AKfycbx-ff1y4kzrCmHGx-FgaFOof8IsUrnd5q5xt9z8cckD5yRIpLlaRmb-F1AKff0llBPBww/exec';
+const API_KEY = 'SA_2026_xK9mP2vL8nQ3wR7y';
 
 // ========================================
 // API Helper Functions
@@ -11,6 +12,7 @@ const SHEETS_API_URL = 'https://script.google.com/a/macros/stationeryaid.org/s/A
 async function callSheetsAPI(action, params = {}) {
     const url = new URL(SHEETS_API_URL);
     url.searchParams.append('action', action);
+    url.searchParams.append('apiKey', API_KEY);
 
     for (const [key, value] of Object.entries(params)) {
         if (value !== undefined && value !== null) {
