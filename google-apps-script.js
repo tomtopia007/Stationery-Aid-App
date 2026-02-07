@@ -11,12 +11,11 @@ const INITIAL_ADMIN_EMAIL = 'tomtopia007@gmail.com';
 const API_KEY = 'SA_2026_xK9mP2vL8nQ3wR7y';
 
 // Actions that modify data and require manager authentication
-// Note: 'applyForShift' is excluded so volunteers can still apply
+// Note: 'applyForShift' and 'removeApplicant' are excluded so volunteers can apply/withdraw
 const MANAGER_WRITE_ACTIONS = [
     'saveVolunteer', 'deleteVolunteer',
     'saveHours', 'deleteHours',
     'saveShift', 'deleteShift',
-    'removeApplicant',
     'submitShiftReview',
     'addManager', 'removeManager'
 ];

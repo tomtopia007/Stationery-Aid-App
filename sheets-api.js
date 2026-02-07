@@ -15,7 +15,6 @@ async function callSheetsAPI(action, params = {}) {
         'saveVolunteer', 'deleteVolunteer',
         'saveHours', 'deleteHours',
         'saveShift', 'deleteShift',
-        'removeApplicant',
         'submitShiftReview',
         'addManager', 'removeManager'
     ];

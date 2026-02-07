@@ -1126,13 +1126,25 @@ async function applyForShift(shiftId, volunteerId, notes = '') {
 
 async function removeApplicant(shiftId, volunteerId) {
     const shift = getShift(shiftId);
-    if (!shift) return;
+    if (!shift) return false;
 
+    // Save original state for rollback
+    const originalApplicants = [...shift.applicants];
+
+    // Optimistic local update
     shift.applicants = shift.applicants.filter(a => a.volunteerId !== volunteerId);
     saveData();
 
     // Sync to Google Sheets
-    await removeApplicantFromCloud(shiftId, volunteerId);
+    const success = await removeApplicantFromCloud(shiftId, volunteerId);
+    if (!success) {
+        // Rollback local change
+        shift.applicants = originalApplicants;
+        saveData();
+        alert('Failed to remove application. Please try again.');
+        return false;
+    }
+    return true;
 }
 
 function renderShifts() {
