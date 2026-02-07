@@ -2,7 +2,7 @@
 // Volunteer Hours Tracker - Sheets API Client
 // ========================================
 
-const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbz9jkWr_jIvxlinW8U0ZYYksZJm6wCvYGCRPNSMSsvtc58_mo8_lG9S1K_QAkKr2sjaaQ/exec';
+const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxm4DFX879ZHcbp8v0G1RnM-L3VObjIBGHExJKxMFat2SkgfQwicJXWKV2hfICLeURCgA/exec';
 const API_KEY = 'SA_2026_xK9mP2vL8nQ3wR7y';
 
 // ========================================
