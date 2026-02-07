@@ -1103,6 +1103,7 @@ async function applyForShift(shiftId, volunteerId, notes = '') {
     if (!volunteer) return false;
 
     // Check if already applied
+    if (!shift.applicants) shift.applicants = [];
     if (shift.applicants.some(a => a.volunteerId === volunteerId)) {
         alert('This volunteer has already applied for this shift.');
         return false;
@@ -2245,16 +2246,24 @@ async function volunteerApplyForShift(shiftId, event) {
     const volunteerId = session.userData.id;
     const notes = prompt('Add a note for your application (optional):') || '';
 
-    const success = await applyForShift(shiftId, volunteerId, notes);
+    let success = false;
+    try {
+        success = await applyForShift(shiftId, volunteerId, notes);
+    } catch (error) {
+        console.error('Error applying for shift:', error);
+    }
+
     if (success) {
         alert('Successfully applied for the shift!');
         // Refresh the dashboard
         const volunteer = appData.volunteers.find(v => v.id === volunteerId) || session.userData;
         renderAppliedShifts(volunteerId);
         renderAvailableShifts(volunteerId);
-    } else if (button) {
-        button.disabled = false;
-        button.innerHTML = 'Apply for Shift';
+    } else {
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = 'Apply for Shift';
+        }
     }
 }
 
