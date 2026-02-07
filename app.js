@@ -1179,9 +1179,9 @@ function renderShifts() {
     }).join('');
 }
 
-function confirmDeleteShift(shiftId) {
+async function confirmDeleteShift(shiftId) {
     if (confirm('Are you sure you want to delete this shift? This will also remove all applications.')) {
-        deleteShift(shiftId);
+        await deleteShift(shiftId);
         renderShifts();
     }
 }
@@ -1243,9 +1243,9 @@ function openViewApplicantsModal(shiftId) {
     openModal('viewApplicantsModal');
 }
 
-function removeApplicantAndRefresh(shiftId, volunteerId) {
+async function removeApplicantAndRefresh(shiftId, volunteerId) {
     if (confirm('Remove this applicant from the shift?')) {
-        removeApplicant(shiftId, volunteerId);
+        await removeApplicant(shiftId, volunteerId);
         openViewApplicantsModal(shiftId); // Refresh the list
         renderShifts(); // Update the main shifts list
     }
@@ -1535,9 +1535,9 @@ function renderHoursTable(volunteer) {
     });
 }
 
-function deleteHoursAndRefresh(volunteerId, entryId) {
+async function deleteHoursAndRefresh(volunteerId, entryId) {
     if (confirm('Delete this hours entry?')) {
-        deleteHoursEntry(volunteerId, entryId);
+        await deleteHoursEntry(volunteerId, entryId);
         const volunteer = getVolunteer(volunteerId);
         if (volunteer) {
             renderHoursTable(volunteer);
@@ -1569,12 +1569,12 @@ function formatTime(timeStr) {
     return `${hour12}:${minutes} ${ampm}`;
 }
 
-function confirmDeleteVolunteer(volunteerId) {
+async function confirmDeleteVolunteer(volunteerId) {
     const volunteer = getVolunteer(volunteerId);
     if (!volunteer) return;
 
     if (confirm(`Are you sure you want to delete ${volunteer.name}? This will also delete all their logged hours.`)) {
-        deleteVolunteer(volunteerId);
+        await deleteVolunteer(volunteerId);
         renderVolunteers();
         updateStats();
         updateVolunteerCount();
